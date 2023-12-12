@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-
+/**
+ * 入口文件
+ * 命令从这里开始
+ */
 import '../server/require-hook'
 import * as log from '../build/output/log'
 import arg from 'next/dist/compiled/arg/index.js'
@@ -118,6 +121,9 @@ async function main() {
   const currentArgsSpec = commandArgs[command]()
   const validatedArgs = getValidatedArgs(currentArgsSpec, forwardedArgs)
 
+  /**
+   * 检测必要的npm package
+   */
   for (const dependency of ['react', 'react-dom']) {
     try {
       // When 'npm link' is used it checks the clone location. Not the project.
@@ -129,6 +135,11 @@ async function main() {
     }
   }
 
+  /**
+   * 执行命令
+   * command 是解析出来的命令字符串
+   * commands 中包含了所有支持的命令
+   */
   await commands[command]()
     .then((exec) => exec(validatedArgs))
     .then(() => {
@@ -140,4 +151,7 @@ async function main() {
     })
 }
 
+/**
+ * 命令入口函数
+ */
 main()

@@ -114,6 +114,10 @@ export async function webpackBuildImpl(
     fetchCacheKeyPrefix: NextBuildContext.fetchCacheKeyPrefix!,
   }
 
+  /**
+   * 获取到webpack配置
+   * 有三种配置 client server edge
+   */
   const configs = await runWebpackSpan
     .traceChild('generate-webpack-config')
     .traceAsyncFn(async () => {
@@ -184,9 +188,16 @@ export async function webpackBuildImpl(
 
     let inputFileSystem: any
 
+    /**
+     * 服务端的编译
+     */
     if (!compilerName || compilerName === 'server') {
       debug('starting server compiler')
       const start = Date.now()
+      /**
+       * 开始编译输出
+       * 转到runCompiler方法
+       */
       ;[serverResult, inputFileSystem] = await runCompiler(serverConfig, {
         runWebpackSpan,
         inputFileSystem,
@@ -194,6 +205,9 @@ export async function webpackBuildImpl(
       debug(`server compiler finished ${Date.now() - start}ms`)
     }
 
+    /**
+     * 同理、如上
+     */
     if (!compilerName || compilerName === 'edge-server') {
       debug('starting edge-server compiler')
       const start = Date.now()
@@ -241,6 +255,10 @@ export async function webpackBuildImpl(
 
     inputFileSystem.purge()
 
+    /**
+     * 收集打包信息
+     * 在下方有格式化信息的方法
+     */
     result = {
       warnings: ([] as any[])
         .concat(
@@ -263,6 +281,10 @@ export async function webpackBuildImpl(
       ],
     }
   })
+
+  /**
+   * 格式化输出信息
+   */
   result = nextBuildSpan
     .traceChild('format-webpack-messages')
     .traceFn(() => formatWebpackMessages(result, true)) as CompilerResult
@@ -277,6 +299,9 @@ export async function webpackBuildImpl(
 
   const webpackBuildEnd = process.hrtime(webpackBuildStart)
 
+  /**
+   * 一些错误判断、无关紧要
+   */
   if (result.errors.length > 0) {
     // Only keep the first few errors. Others are often indicative
     // of the same problem, but confuse the reader with noise.
@@ -361,6 +386,10 @@ export async function workerMain(workerData: {
     `worker-main-${workerData.compilerName}`
   )
 
+  /**
+   * 这边请！！
+   * 转到定义或拉到顶端
+   */
   const result = await webpackBuildImpl(workerData.compilerName)
   const { entriesTrace, chunksTrace } = result.buildTraceContext ?? {}
   if (entriesTrace) {

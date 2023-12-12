@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+/**
+ * 启动生产环境（先build）
+ */
 import '../server/lib/cpu-profile'
 import { startServer } from '../server/lib/start-server'
 import { getPort, printAndExit } from '../server/lib/utils'
@@ -58,6 +62,9 @@ const nextStart: CliCommand = async (args) => {
     ? Math.ceil(keepAliveTimeoutArg)
     : undefined
 
+  /**
+   * 服务入口
+   */
   await startServer({
     dir,
     isDev: false,

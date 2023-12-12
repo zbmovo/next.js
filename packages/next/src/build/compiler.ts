@@ -35,6 +35,11 @@ function closeCompiler(compiler: webpack.Compiler | webpack.MultiCompiler) {
   })
 }
 
+/**
+ * 编译的核心位置！！！
+ * 内部调用 webpack 生成了 Compiler 对象
+ * 然后输出资源
+ */
 export function runCompiler(
   config: webpack.Configuration,
   {

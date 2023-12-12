@@ -30,6 +30,9 @@ function deepMerge(target: any, source: any) {
   return result
 }
 
+/**
+ * 使用Worker进程打包
+ */
 async function webpackBuildWithWorker(
   compilerNames: typeof ORDERED_COMPILER_NAMES = ORDERED_COMPILER_NAMES
 ) {
@@ -44,6 +47,10 @@ async function webpackBuildWithWorker(
   prunedBuildContext.pluginState = pluginState
 
   const getWorker = (compilerName: string) => {
+    /**
+     * 创建一个Worker对象、位于当前文件夹下的 impl.js
+     * 其中导出的 workerMain 是主函数
+     */
     const _worker = new Worker(path.join(__dirname, 'impl.js'), {
       exposedMethods: ['workerMain'],
       numWorkers: 1,
@@ -55,6 +62,10 @@ async function webpackBuildWithWorker(
         },
       },
     }) as Worker & typeof import('./impl')
+
+    /**
+     * worker消息通过流输出到控制台
+     */
     _worker.getStderr().pipe(process.stderr)
     _worker.getStdout().pipe(process.stdout)
 
@@ -78,6 +89,10 @@ async function webpackBuildWithWorker(
     buildTraceContext: {} as BuildTraceContext,
   }
 
+  /**
+   * 通过编译的类型创建 worker
+   * 调用 worker 的主函数启用脚本
+   */
   for (const compilerName of compilerNames) {
     const worker = getWorker(compilerName)
 
@@ -93,6 +108,8 @@ async function webpackBuildWithWorker(
     if (nextBuildSpan && curResult.debugTraceEvents) {
       recordTraceEvents(curResult.debugTraceEvents)
     }
+
+    // 从这里结束
     // destroy worker so it's not sticking around using memory
     await worker.end()
 
@@ -134,11 +151,17 @@ async function webpackBuildWithWorker(
   return combinedResult
 }
 
+/**
+ * 打包的入口函数
+ */
 export async function webpackBuild(
   compilerNames?: typeof ORDERED_COMPILER_NAMES
 ) {
   const config = NextBuildContext.config!
 
+  /**
+   * 是否启用[Worker](https://nodejs.org/api/worker_threads.html)来进行打包
+   */
   if (config.experimental.webpackBuildWorker) {
     debug('using separate compiler workers')
     return await webpackBuildWithWorker(compilerNames)

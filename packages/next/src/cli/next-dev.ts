@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+/**
+ * 开发环境脚本入口
+ */
 import '../server/lib/cpu-profile'
 import type { StartServerOptions } from '../server/lib/start-server'
 import {
@@ -111,6 +114,9 @@ const handleSessionStop = async (signal: string | null) => {
 process.on('SIGINT', () => handleSessionStop('SIGINT'))
 process.on('SIGTERM', () => handleSessionStop('SIGTERM'))
 
+/**
+ * 主函数
+ */
 const nextDev: CliCommand = async (args) => {
   if (args['--help']) {
     console.log(`
@@ -218,15 +224,33 @@ const nextDev: CliCommand = async (args) => {
   setGlobal('phase', PHASE_DEVELOPMENT_SERVER)
   setGlobal('distDir', distDir)
 
+  /**
+   * 脚本路径
+   * 在下边使用 fork 启动的子进程
+   *
+   * require.resolve 会解析出绝对路径
+   */
+  // import '../server/lib/start-server'
   const startServerPath = require.resolve('../server/lib/start-server')
+
+  /**
+   * 启动服务
+   */
   async function startServer(options: StartServerOptions) {
     return new Promise<void>((resolve) => {
+      /**
+       * 一些启动参数
+       */
       let resolved = false
       const defaultEnv = (initialEnv || process.env) as typeof process.env
 
       let NODE_OPTIONS = getNodeOptionsWithoutInspect()
       let nodeDebugType = checkNodeDebugType()
 
+      /**
+       * 老生代空间大小
+       * node --max-old-space-size 参数
+       */
       const maxOldSpaceSize = getMaxOldSpaceSize()
 
       if (!maxOldSpaceSize && !process.env.NEXT_DISABLE_MEM_OVERRIDE) {
@@ -243,6 +267,10 @@ const nextDev: CliCommand = async (args) => {
         }`
       }
 
+      /**
+       * fork 一个子进程
+       * startServerPath 是脚本路径
+       */
       child = fork(startServerPath, {
         stdio: 'inherit',
         env: {
@@ -292,6 +320,9 @@ const nextDev: CliCommand = async (args) => {
     })
   }
 
+  /**
+   * 执行位置 1
+   */
   const runDevServer = async (reboot: boolean) => {
     try {
       if (!!args['--experimental-https']) {
@@ -320,6 +351,10 @@ const nextDev: CliCommand = async (args) => {
           selfSignedCertificate: certificate,
         })
       } else {
+        /**
+         * 执行位置 2
+         * 启动服务
+         */
         await startServer(devServerOptions)
       }
 

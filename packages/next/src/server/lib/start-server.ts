@@ -1,3 +1,10 @@
+/**
+ * 开发环境的启动脚本
+ * 该脚本文件使用 fork 启动
+ *
+ * 具体位置在 /workspaces/next.js/packages/next/src/cli/next-dev.ts:274:7
+ */
+
 if (performance.getEntriesByName('next-start').length === 0) {
   performance.mark('next-start')
 }
@@ -80,7 +87,10 @@ export async function getRequestHandlers({
     startServerSpan,
   })
 }
-
+/**
+ * 启动服务
+ * 本质上就是用Node做一个简易服务器
+ */
 export async function startServer(
   serverOptions: StartServerOptions
 ): Promise<void> {
@@ -106,6 +116,14 @@ export async function startServer(
       handlersError = reject
     }
   )
+
+  /**
+   * 下边引用了这个处理函数
+   * 但是别被这个函数迷惑了、这个函数只是一个保底
+   * 当服务启动后、会监听 listening 事件、该函数会在该事件中被重新赋值
+   *
+   * 具体请跳转到 FLAG = 1702387016039
+   */
   let requestHandler: WorkerRequestHandler = async (
     req: IncomingMessage,
     res: ServerResponse
@@ -135,6 +153,10 @@ export async function startServer(
     )
   }
 
+  /**
+   * FLAG 1702387120212
+   * http?s 服务器的回调
+   */
   async function requestListener(req: IncomingMessage, res: ServerResponse) {
     try {
       if (handlersPromise) {
@@ -169,6 +191,13 @@ export async function startServer(
     }
   }
 
+  /**
+   * 创建一个服务器
+   * 具体创建使用https还是http取决于是否具有证数
+   * 不过如果是线上项目、还是推荐启用https访问、Chrome现在默认拦截未包含证书的网站
+   *
+   * 回调位置 FLAG = 1702387120212
+   */
   const server = selfSignedCertificate
     ? https.createServer(
         {
@@ -215,8 +244,14 @@ export async function startServer(
 
   const nodeDebugType = checkNodeDebugType()
 
+  /**
+   * 服务器在这里启动
+   */
   await new Promise<void>((resolve) => {
     server.on('listening', async () => {
+      /**
+       * 格式化ip地址
+       */
       const addr = server.address()
       const actualHostname = formatHostname(
         typeof addr === 'object'
@@ -293,6 +328,10 @@ export async function startServer(
         process.on('uncaughtException', exception)
         process.on('unhandledRejection', exception)
 
+        /**
+         * FLAG: 1702387016039
+         * 获取处理函数（server的回调函数）
+         */
         const initResult = await getRequestHandlers({
           dir,
           port,
@@ -339,6 +378,10 @@ export async function startServer(
 
       resolve()
     })
+
+    /**
+     * 监听端口
+     */
     server.listen(port, hostname)
   })
 
@@ -372,8 +415,15 @@ export async function startServer(
 }
 
 if (process.env.NEXT_PRIVATE_WORKER && process.send) {
+  /**
+   * 由于是 fork 启动
+   * 在此处使用 process 对象进行进程消息互通
+   */
   process.addListener('message', async (msg: any) => {
     if (msg && typeof msg && msg.nextWorkerOptions && process.send) {
+      /**
+       * 做信息收集，埋点
+       */
       startServerSpan = trace('start-dev-server', undefined, {
         cpus: String(os.cpus().length),
         platform: os.platform(),
@@ -381,7 +431,12 @@ if (process.env.NEXT_PRIVATE_WORKER && process.send) {
         'memory.totalMem': String(os.totalmem()),
         'memory.heapSizeLimit': String(v8.getHeapStatistics().heap_size_limit),
       })
+
       await startServerSpan.traceAsyncFn(() =>
+        /**
+         * 启动脚本
+         * 跳转至 91:1
+         */
         startServer(msg.nextWorkerOptions)
       )
       const memoryUsage = process.memoryUsage()

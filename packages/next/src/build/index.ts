@@ -349,6 +349,9 @@ function pageToRoute(page: string) {
   }
 }
 
+/**
+ * 打包函数
+ */
 export default async function build(
   dir: string,
   reactProductionProfiling = false,
@@ -1043,6 +1046,10 @@ export default async function build(
           ignore: [] as string[],
         }))
 
+      /**
+       * TK大神整的新活 [turbopack](https://github.com/vercel/turbo)
+       * 万物基于 Rest !!!
+       */
       async function turbopackBuild() {
         const turboNextBuildStart = process.hrtime()
 
